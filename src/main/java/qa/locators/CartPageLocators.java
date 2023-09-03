@@ -11,13 +11,10 @@ public class CartPageLocators {
      * locate them
      */
 
-    @FindBy(xpath = "//*[@id=\"checkout-frontend\"]/div/main/section/article/button")
+    @FindBy(xpath = "//*[@data-zta=\"continueShoppingBtn\"]")
     public WebElement continueShoppingButton;
 
-    @FindBy(xpath = "//*[@id=\"checkout-frontend\"]/div/main/section/article/h1")
-    public WebElement cartEmptyMessage;
-
-    @FindBy(xpath = "//*[@id=\"checkout-frontend\"]/div/main/h1")
+    @FindBy(xpath = "//*[@data-zta=\"H1UIC\"]")
     public WebElement shoppingBasketTitle;
 
     @FindBy(xpath = "//*[@id=\"splide01-slide02\"]")
@@ -34,4 +31,43 @@ public class CartPageLocators {
 
     @FindBy(xpath = "//*[@id=\"checkout-frontend\"]/div/main/section/article[1]/div/article[2]")
     public WebElement secondProductAddedToCart;
+
+    @FindBy(xpath = "//*[@data-zta=\"gotoPreviewBottom\"]")
+    public WebElement proceedToCheckoutButton;
+
+    @FindBy(xpath = "//*[@id=\"splide03-slide01\"]")
+    public WebElement firstRecommendedProduct;
+
+    @FindBy(xpath = "//*[@data-zta=\"shippingCountryName\"]")
+    public WebElement countrySelected;
+
+    @FindBy(xpath = "//*[@data-zta=\"dropdownMenuInnerWrap\"]")
+    public WebElement countriesDropdown;
+
+    @FindBy(xpath = "//*[@data-zta=\"dropdownMenuMenu\"]")
+    public WebElement dropdownMenu;
+
+    @FindBy(xpath = "//*[@data-zta=\"inputInput\"]")
+    public WebElement postcodeInput;
+
+    @FindBy(xpath = "//*[@data-zta=\"shippingCostPopoverAction\"]")
+    public WebElement updateCountryButton;
+
+    @FindBy(xpath = "//*[@data-zta=\"shippingCostValueOverview\"]")
+    public WebElement shipmentFeeAmount;
+
+    @FindBy(xpath = "//*[@data-zta=\"total__price__value\"]")
+    public WebElement totalAmount;
+
+    @FindBy(xpath = "//*[@data-zta=\"enterCouponBtn\"]")
+    public WebElement enterCouponCodeButton;
+
+    @FindBy(xpath = "//*[@data-zta=\"couponCode\"]")
+    public WebElement enterCouponCodeInput;
+
+    @FindBy(xpath = "//*[@data-zta=\"redeemCode\"]")
+    public WebElement redeemCouponCodeButton;
+
+    @FindBy(css = ".z-alert--info")
+    public WebElement incorrectCouponCodeMessage;
 }

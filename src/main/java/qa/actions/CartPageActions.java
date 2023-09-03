@@ -1,21 +1,24 @@
 package qa.actions;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import qa.locators.CartPageLocators;
 import qa.utils.HelperClass;
 
 import java.text.DecimalFormat;
+import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class CartPageActions {
     /**
-     * Class dedicated to implement
+     * Class dedicated to implement the interactions with
+     * the Shopping Cart Page.
      */
     CartPageLocators cartPageLocators = null;
     private Map<String, String> productSuggestedInfo = new HashMap<>();
@@ -23,7 +26,8 @@ public class CartPageActions {
     private Map<String, String> secondProductInfo = new HashMap<>();
     private Map<String, String> firstLikeableProductInfo = new HashMap<>();
     private String subtotalAmount;
-    private static WebDriver driver;
+    private String shipmentFeeAmount;
+    private String totalAmount;
 
     public CartPageActions() {
         this.cartPageLocators = new CartPageLocators();
@@ -32,25 +36,17 @@ public class CartPageActions {
     }
 
     Actions actions = new Actions(HelperClass.getDriver());
+    WebDriverWait wait = new WebDriverWait(HelperClass.getDriver(), Duration.ofSeconds(10));;
 
-    public String cartIsEmptyMessage() {
-        return cartPageLocators.cartEmptyMessage.getText();
+
+    public String cartTitle() {
+        WebElement shoppingBasketTitle = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.shoppingBasketTitle));
+        return shoppingBasketTitle.getText();
     }
 
     public Boolean continueShoppingButtonIsDisplayed() {
-        return cartPageLocators.continueShoppingButton.isDisplayed();
-    }
-
-    public Boolean cartTitleWithContentsIsDisplayed() {
-        return cartPageLocators.shoppingBasketTitle.isDisplayed();
-    }
-
-    public Map<String, String> productToBeAddedInfo() {
-        return productSuggestedInfo;
-    }
-
-    public Map<String, String> firstProductAddedInfo() {
-        return firstProductInfo;
+        WebElement continueShoppingButton = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.continueShoppingButton));
+        return continueShoppingButton.isDisplayed();
     }
 
     public Map<String, String> getProductAddedToCartInfo(WebElement productElement) {
@@ -73,21 +69,6 @@ public class CartPageActions {
         secondProductInfo = getProductAddedToCartInfo(cartPageLocators.secondProductAddedToCart);
     }
 
-
-//    public void getFirstProductAddedToCartInfo() {
-//        String productName = cartPageLocators.firstProductAddedToCart.findElement(By.cssSelector(".z-anchor--bold")).getText();
-//        String productPrice = cartPageLocators.firstProductAddedToCart.findElement(By.cssSelector(".z-price__amount--standard")).getText();
-//        firstProductInfo.put("productName", productName);
-//        firstProductInfo.put("productPrice", productPrice);
-//    }
-//
-//    public void getSecondProductAddedToCartInfo() {
-//        String productName = cartPageLocators.secondProductAddedToCart.findElement(By.cssSelector(".z-anchor--bold")).getText();
-//        String productPrice = cartPageLocators.secondProductAddedToCart.findElement(By.cssSelector(".z-price__amount--standard")).getText();
-//        secondProductInfo.put("productName", productName);
-//        secondProductInfo.put("productPrice", productPrice);
-//    }
-
     public boolean suggestedProductAddedMatchesTheOneAddedToCart() {
         getFirstProductAddedToCartInfo();
 
@@ -108,7 +89,7 @@ public class CartPageActions {
         return value1.equals(value2);
     }
 
-    public Boolean onlyOneSuggestedProductWasAdded(){
+    public boolean onlyOneSuggestedProductWasAdded(){
         String subtotal = cartPageLocators.subtotalAmount.getText();
         String productPrice = productSuggestedInfo.get("productPrice");
 
@@ -134,11 +115,13 @@ public class CartPageActions {
     }
 
     public void getSuggestedProductInformationAndClick() {
-        productSuggestedInfo = getProductInformationFromSlidesAndClick(cartPageLocators.suggestedProduct);
+        WebElement suggestedProduct = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.suggestedProduct));
+        productSuggestedInfo = getProductInformationFromSlidesAndClick(suggestedProduct);
     }
 
     public void getLikeableProductInformationAndClick() {
-        firstLikeableProductInfo = getProductInformationFromSlidesAndClick(cartPageLocators.firstLikeableProduct);
+        WebElement firstLikeableProduct = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.firstLikeableProduct));
+        firstLikeableProductInfo = getProductInformationFromSlidesAndClick(firstLikeableProduct);
     }
 
     public String getAmountWithoutEuro(String amount){
@@ -152,45 +135,163 @@ public class CartPageActions {
     }
 
     public String getSubtotalAmount() {
-        subtotalAmount = getAmountWithoutEuro(cartPageLocators.subtotalAmount.getText());
+        WebElement subtotalAmountLocator = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.subtotalAmount));
+        subtotalAmount = getAmountWithoutEuro(subtotalAmountLocator.getText());
         return subtotalAmount;
     }
 
-    public String calculateNewSubtotalAmount(Map<String, String> newProductAdded) {
+    public String getShipmentAmount() {
+        WebElement shipmentAmountLocator = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.shipmentFeeAmount));
+        shipmentFeeAmount = getAmountWithoutEuro(shipmentAmountLocator.getText());
+        return shipmentFeeAmount;
+    }
+
+    public String getTotalAmount() {
+        WebElement totalAmountLocator = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.totalAmount));
+        totalAmount = getAmountWithoutEuro(totalAmountLocator.getText());
+        return totalAmount;
+    }
+
+    public String calculateNewAmount(String currentAmount, Map<String, String> newProductAdded) {
         String productPrice = getAmountWithoutEuro(newProductAdded.get("productPrice"));
+        float productPriceAmount = Float.parseFloat(productPrice);
+        float oldAmount = Float.parseFloat(currentAmount);
 
-        Float productPriceAmount = Float.parseFloat(productPrice);
-        Float oldSubtotalAmount = Float.parseFloat(subtotalAmount);
-
-        float subtotal = productPriceAmount + oldSubtotalAmount;
+        float newAmount = productPriceAmount + oldAmount;
 
         DecimalFormat decimalFormat = new DecimalFormat("#.##");
-        float roundedSubtotal = Float.parseFloat(decimalFormat.format(subtotal));
+        float roundedAmount = Float.parseFloat(decimalFormat.format(newAmount));
 
-        return Float.toString(roundedSubtotal);
+        return Float.toString(roundedAmount);
+    }
+
+    public String calculateNewSubtotalAmount(Map<String, String> newProductAdded) {
+        return calculateNewAmount(subtotalAmount, newProductAdded);
+    }
+
+    public String calculateNewTotalAmount(Map<String, String> newProductAdded) {
+        return calculateNewAmount(totalAmount, newProductAdded);
     }
 
     public Boolean newSubtotalIsCorrect() {
         subtotalAmount = calculateNewSubtotalAmount(secondProductInfo);
-
-        System.out.println(subtotalAmount);
-
         return subtotalAmount.equals(getSubtotalAmount());
     }
 
-    public void clearShoppingCart() {
-        while (cartIsNotEmpty()) {
-            // Find and click the "Remove" button for each item in the cart
-            List<WebElement> removeButtons = driver.findElements(By.cssSelector(".z-qty-stepper__btn"));
-            if (!removeButtons.isEmpty()) {
-                WebElement firstRemoveButton = removeButtons.get(0);
-                firstRemoveButton.click();
+    public Boolean newTotalWithSubtotalChangedIsCorrect() {
+        totalAmount = calculateNewTotalAmount(secondProductInfo);
+        return totalAmount.equals(getTotalAmount());
+    }
+
+    public Boolean verifyProceedToCheckoutButtonEnabled() {
+        WebElement proceedToCheckoutButton = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.proceedToCheckoutButton));
+        return proceedToCheckoutButton.isEnabled();
+    }
+
+    public void addRecommendedProductsUntilSubtotalAmountIsMet(Float amount) {
+        String currentSubtotalAmount = subtotalAmount;
+        while (Float.parseFloat(currentSubtotalAmount) < amount) {
+            WebElement firstRecommendedProductButton = cartPageLocators.firstRecommendedProduct.findElement(By.cssSelector(".recommendation-item-module_cartBtn__i-O64"));
+
+            while (!firstRecommendedProductButton.isDisplayed()) {
+                actions.moveToElement(firstRecommendedProductButton).perform();
             }
+
+            firstRecommendedProductButton.click();
+
+            String newSubtotalAmount = getSubtotalAmount();
+
+            while (newSubtotalAmount.equals(currentSubtotalAmount)) {
+                try {
+                    newSubtotalAmount = getSubtotalAmount();
+                }
+                catch (StaleElementReferenceException e) {
+                    System.out.println("StaleElementReferenceException occurred, retrying...");
+                }
+            }
+
+            currentSubtotalAmount = getSubtotalAmount();
         }
     }
 
-    private static Boolean cartIsNotEmpty() {
-        List<WebElement> cartItems = driver.findElements(By.cssSelector("._y8rnTfjeHCx2lXE5RDE"));
-        return !cartItems.isEmpty();
+    public Boolean verifySelectedCountry(String selectedCountry) {
+        String currentSelectedCountry = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.countrySelected)).getText();
+        return currentSelectedCountry.contains(selectedCountry);
+    }
+
+    private void selectNewCountry(String country) {
+        cartPageLocators.countrySelected.click();
+        cartPageLocators.countriesDropdown.click();
+        WebElement dropdownMenu = cartPageLocators.dropdownMenu;
+
+        // Locate and click the specific option within the dropdown based on country
+        String optionXPath = String.format("//*[@data-label='%s']", country);
+        WebElement countryOption = dropdownMenu.findElement(By.xpath(optionXPath));
+        countryOption.click();
+    }
+
+    private void setInputField(WebElement field, String value) {
+        WebElement inputField =  wait.until(ExpectedConditions.visibilityOf(field));
+        inputField.click();
+        inputField.clear();
+        inputField.sendKeys(value);
+    }
+
+    private void selectNewPostcode(String postcode) {
+        setInputField(cartPageLocators.postcodeInput, postcode);
+    }
+
+    private void enterCouponCode(String couponCode) {
+        setInputField(cartPageLocators.enterCouponCodeInput, couponCode);
+    }
+
+    public void acceptDeliveryChanges(String country, String postcode) {
+        String currentCountry = cartPageLocators.countrySelected.getText();
+        selectNewCountry(country);
+        selectNewPostcode(postcode);
+        cartPageLocators.updateCountryButton.click();
+    }
+
+    public Boolean shipmentFeeIsChanged() {
+        String previousShipmentFeeAmount = shipmentFeeAmount;
+        shipmentFeeAmount = getShipmentAmount();
+        return !shipmentFeeAmount.equals(previousShipmentFeeAmount);
+    }
+
+    public boolean newTotalMatchesWithNewShipmentFee() {
+        String newSubtotalAmount = getSubtotalAmount();
+
+        Float newTotalExpected = Float.parseFloat(newSubtotalAmount) + Float.parseFloat(shipmentFeeAmount);
+
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
+        float roundedTotal = Float.parseFloat(decimalFormat.format(newTotalExpected));
+
+        String currentTotal = getTotalAmount();
+
+        return currentTotal.equals(Float.toString(roundedTotal));
+    }
+
+    public boolean totalHasChanged() {
+        String previousTotalAmount = totalAmount;
+        totalAmount = getTotalAmount();
+        return !previousTotalAmount.equals(totalAmount);
+    }
+
+    public boolean verifyShippingFeeIsFree() {
+        WebElement shipmentAmountLocator = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.shipmentFeeAmount));
+        String shipmentText = shipmentAmountLocator.getText();
+        return shipmentText.equals("Free");
+    }
+
+    public void insertCouponCode(String couponCode) {
+        wait.until(ExpectedConditions.visibilityOf(cartPageLocators.enterCouponCodeButton)).click();
+        enterCouponCode(couponCode);
+        wait.until(ExpectedConditions.visibilityOf(cartPageLocators.redeemCouponCodeButton)).click();
+    }
+
+    public String getIncorrectCouponCodeMessage() {
+        String message = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.incorrectCouponCodeMessage)).getText();
+        System.out.println(message);
+        return message;
     }
 }
