@@ -69,5 +69,5 @@ public class CartPageLocators {
     public WebElement redeemCouponCodeButton;
 
     @FindBy(css = ".z-alert--info")
-    public WebElement incorrectCouponCodeMessage;
+    public WebElement alertInfo;
 }

@@ -9,10 +9,13 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import qa.locators.CartPageLocators;
 import qa.utils.HelperClass;
+import qa.utils.PriceAndButtonSorter;
+import qa.utils.RemoveEuroSymbol;
 
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CartPageActions {
@@ -20,7 +23,7 @@ public class CartPageActions {
      * Class dedicated to implement the interactions with
      * the Shopping Cart Page.
      */
-    CartPageLocators cartPageLocators = null;
+    CartPageLocators cartPageLocators;
     private Map<String, String> productSuggestedInfo = new HashMap<>();
     private Map<String, String> firstProductInfo = new HashMap<>();
     private Map<String, String> secondProductInfo = new HashMap<>();
@@ -28,15 +31,20 @@ public class CartPageActions {
     private String subtotalAmount;
     private String shipmentFeeAmount;
     private String totalAmount;
+    private String currentProductQuantity;
+    RemoveEuroSymbol removeEuroSymbol;
+    PriceAndButtonSorter sorter;
 
     public CartPageActions() {
         this.cartPageLocators = new CartPageLocators();
+        this.removeEuroSymbol = new RemoveEuroSymbol();
+        this.sorter = new PriceAndButtonSorter();
 
         PageFactory.initElements(HelperClass.getDriver(), cartPageLocators);
     }
 
     Actions actions = new Actions(HelperClass.getDriver());
-    WebDriverWait wait = new WebDriverWait(HelperClass.getDriver(), Duration.ofSeconds(10));;
+    WebDriverWait wait = new WebDriverWait(HelperClass.getDriver(), Duration.ofSeconds(10));
 
 
     public String cartTitle() {
@@ -84,8 +92,6 @@ public class CartPageActions {
         String value1 = firstLikeableProductInfo.get("productName");
         String value2 = secondProductInfo.get("productName");
 
-        System.out.println("suggested: " + value1 + ". added: " + value2);
-
         return value1.equals(value2);
     }
 
@@ -124,36 +130,27 @@ public class CartPageActions {
         firstLikeableProductInfo = getProductInformationFromSlidesAndClick(firstLikeableProduct);
     }
 
-    public String getAmountWithoutEuro(String amount){
-        // Remove the Euro symbol and any leading/trailing whitespace
-        amount = amount.replaceAll("[^0-9.,]", "").trim();
-
-        // Replace any comma with a period to ensure it's a valid float representation
-        amount = amount.replace(',', '.');
-
-        return amount;
-    }
 
     public String getSubtotalAmount() {
         WebElement subtotalAmountLocator = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.subtotalAmount));
-        subtotalAmount = getAmountWithoutEuro(subtotalAmountLocator.getText());
+        subtotalAmount = removeEuroSymbol.getAmountWithoutEuro(subtotalAmountLocator.getText());
         return subtotalAmount;
     }
 
     public String getShipmentAmount() {
         WebElement shipmentAmountLocator = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.shipmentFeeAmount));
-        shipmentFeeAmount = getAmountWithoutEuro(shipmentAmountLocator.getText());
+        shipmentFeeAmount = removeEuroSymbol.getAmountWithoutEuro(shipmentAmountLocator.getText());
         return shipmentFeeAmount;
     }
 
     public String getTotalAmount() {
         WebElement totalAmountLocator = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.totalAmount));
-        totalAmount = getAmountWithoutEuro(totalAmountLocator.getText());
+        totalAmount = removeEuroSymbol.getAmountWithoutEuro(totalAmountLocator.getText());
         return totalAmount;
     }
 
-    public String calculateNewAmount(String currentAmount, Map<String, String> newProductAdded) {
-        String productPrice = getAmountWithoutEuro(newProductAdded.get("productPrice"));
+    public String calculateNewAmountOfAddedProduct(String currentAmount, Map<String, String> newProductAdded) {
+        String productPrice = removeEuroSymbol.getAmountWithoutEuro(newProductAdded.get("productPrice"));
         float productPriceAmount = Float.parseFloat(productPrice);
         float oldAmount = Float.parseFloat(currentAmount);
 
@@ -166,19 +163,19 @@ public class CartPageActions {
     }
 
     public String calculateNewSubtotalAmount(Map<String, String> newProductAdded) {
-        return calculateNewAmount(subtotalAmount, newProductAdded);
+        return calculateNewAmountOfAddedProduct(subtotalAmount, newProductAdded);
     }
 
     public String calculateNewTotalAmount(Map<String, String> newProductAdded) {
-        return calculateNewAmount(totalAmount, newProductAdded);
+        return calculateNewAmountOfAddedProduct(totalAmount, newProductAdded);
     }
 
-    public Boolean newSubtotalIsCorrect() {
+    public Boolean newSubtotalIsCorrectWithSecondProductAdded() {
         subtotalAmount = calculateNewSubtotalAmount(secondProductInfo);
         return subtotalAmount.equals(getSubtotalAmount());
     }
 
-    public Boolean newTotalWithSubtotalChangedIsCorrect() {
+    public Boolean newTotalWithSecondProductChangedIsCorrect() {
         totalAmount = calculateNewTotalAmount(secondProductInfo);
         return totalAmount.equals(getTotalAmount());
     }
@@ -246,7 +243,6 @@ public class CartPageActions {
     }
 
     public void acceptDeliveryChanges(String country, String postcode) {
-        String currentCountry = cartPageLocators.countrySelected.getText();
         selectNewCountry(country);
         selectNewPostcode(postcode);
         cartPageLocators.updateCountryButton.click();
@@ -289,9 +285,74 @@ public class CartPageActions {
         wait.until(ExpectedConditions.visibilityOf(cartPageLocators.redeemCouponCodeButton)).click();
     }
 
-    public String getIncorrectCouponCodeMessage() {
-        String message = wait.until(ExpectedConditions.visibilityOf(cartPageLocators.incorrectCouponCodeMessage)).getText();
-        System.out.println(message);
-        return message;
+    public String getInformationMessage() {
+        return wait.until(ExpectedConditions.visibilityOf(cartPageLocators.alertInfo)).getText();
+    }
+
+
+    public void removeCheapestProductsUntilSubtotalAmountIsMet(Float amount) {
+        String currentSubtotalAmount = subtotalAmount;
+        while (Float.parseFloat(currentSubtotalAmount) > amount) {
+            List<PriceAndButtonSorter.ProductsElements> sortedData = sorter.getSortedPricesAndButtons();
+            int itemCount = sortedData.size();
+
+            WebElement cheapestProductDecreasingButton = sortedData.get(itemCount - 1).getDecreaseButtonElement();
+            cheapestProductDecreasingButton.click();
+
+            String newSubtotalAmount = getSubtotalAmount();
+
+            while (newSubtotalAmount.equals(currentSubtotalAmount)) {
+                try {
+                    newSubtotalAmount = getSubtotalAmount();
+                }
+                catch (StaleElementReferenceException e) {
+                    System.out.println("StaleElementReferenceException occurred, retrying...");
+                }
+            }
+
+            currentSubtotalAmount = getSubtotalAmount();
+        }
+    }
+
+    public String missingAmountForFreeShipping() {
+        subtotalAmount = getSubtotalAmount();
+        Float missingAmount = 69.0f - Float.parseFloat(subtotalAmount);
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
+        float roundedMissingAmount = Float.parseFloat(decimalFormat.format(missingAmount));
+        return Float.toString(roundedMissingAmount);
+    }
+
+    public void increaseCheapestProduct() {
+        subtotalAmount = getSubtotalAmount();
+        totalAmount = getTotalAmount();
+        List<PriceAndButtonSorter.ProductsElements> sortedData = sorter.getSortedPricesAndButtons();
+        int itemCount = sortedData.size();
+        WebElement cheapestProductIncreasingButton = sortedData.get(itemCount - 1).getIncreaseButtonElement();
+        currentProductQuantity = sortedData.get(itemCount - 1).getQuantityInputElement().getAttribute("value");
+        cheapestProductIncreasingButton.click();
+    }
+
+    public Boolean quantityOfCheapestProductHasIncreasedBy (int increment) {
+        List<PriceAndButtonSorter.ProductsElements> sortedData = sorter.getSortedPricesAndButtons();
+        int itemCount = sortedData.size();
+        Integer previousQuantity = Integer.parseInt(currentProductQuantity);
+        WebElement inputElement = wait.until(ExpectedConditions.visibilityOf(sortedData.get(itemCount - 1).getQuantityInputElement()));
+        Integer newQuantity = Integer.parseInt(inputElement.getAttribute("value"));
+        int difference = newQuantity - previousQuantity;
+        return difference == increment;
+    }
+
+    public void editQuantityOfCheapestProductBy(String value) {
+        List<PriceAndButtonSorter.ProductsElements> sortedData = sorter.getSortedPricesAndButtons();
+        int itemCount = sortedData.size();
+        WebElement quantityInput = sortedData.get(itemCount - 1).getQuantityInputElement();
+        currentProductQuantity = quantityInput.getAttribute("value");
+        setInputField(quantityInput, value);
+    }
+
+    public void decreaseMostExpensiveProduct() {
+        List<PriceAndButtonSorter.ProductsElements> sortedData = sorter.getSortedPricesAndButtons();
+        WebElement expensiveProductDecreasingButton = sortedData.get(0).getDecreaseButtonElement();
+        expensiveProductDecreasingButton.click();
     }
 }

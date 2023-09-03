@@ -14,6 +14,7 @@ public class CartPageSteps {
     @Given("The user is in the cart page")
     public void navigateToCartPage(){
         HelperClass.openPage("https://www.zooplus.com/checkout/cart");
+        Assert.assertTrue(HelperClass.getDriver().getCurrentUrl().contains("/cart"));
     }
 
     @Given("The cart is empty")
@@ -58,8 +59,8 @@ public class CartPageSteps {
     @Then("The product has been added to the cart")
     public void theProductHasBeenAddedToTheCart() {
         Assert.assertTrue(cartPage.likeableProductAddedMatchesTheSecondAddedToCart());
-        Assert.assertTrue(cartPage.newSubtotalIsCorrect());
-        Assert.assertTrue(cartPage.newTotalWithSubtotalChangedIsCorrect());
+        Assert.assertTrue(cartPage.newSubtotalIsCorrectWithSecondProductAdded());
+        Assert.assertTrue(cartPage.newTotalWithSecondProductChangedIsCorrect());
     }
 
     @Given("The subtotal is less than €{float}")
@@ -132,11 +133,51 @@ public class CartPageSteps {
 
     @Then("An information message appears indicating the code {string} is not valid")
     public void anInformationMessageAppearsIndicatingTheCodeIsNotValid(String arg0) {
-        Assert.assertTrue(cartPage.getIncorrectCouponCodeMessage().contains(arg0));
+        Assert.assertTrue(cartPage.getInformationMessage().contains(arg0));
     }
 
     @And("The Total amount doesn't include any discount")
-    public void theTotalAmountDoesnTIncludeAnyDiscount() {
+    public void theTotalAmountDoesntIncludeAnyDiscount() {
         Assert.assertFalse(cartPage.totalHasChanged());
+    }
+
+    @When("The user removes the cheapest products until the subtotal is less than €{float}")
+    public void theUserRemovesTheCheapestProductsUntilTheSubtotalIsLessThan(Float arg0) {
+        cartPage.removeCheapestProductsUntilSubtotalAmountIsMet(arg0);
+    }
+
+    @Then("The shipping fee is not free")
+    public void theShippingFeeIsNotFree() {
+        Assert.assertFalse(cartPage.verifyShippingFeeIsFree());
+    }
+
+    @And("The information message about Free shipping costs appears")
+    public void theInformationMessageAboutFreeShippingCostsAppears() {
+        Assert.assertTrue(cartPage.getInformationMessage().contains(cartPage.missingAmountForFreeShipping()));
+    }
+
+    @When("The user clicks on the + button of the cheapest product in the cart")
+    public void theUserClicksOnTheButtonOfTheCheapestProductInTheCart() {
+        cartPage.increaseCheapestProduct();
+    }
+
+    @Then("The quantity of the product increases by {int}")
+    public void theQuantityOfTheProductIncreasesBy(int arg0) {
+        Assert.assertTrue(cartPage.quantityOfCheapestProductHasIncreasedBy(arg0));
+    }
+
+    @When("The user edits the quantity of the cheapest product by adding {string} more items")
+    public void theUserEditsTheQuantityOfTheCheapestProductByAddingMoreItems(String arg0) {
+        cartPage.editQuantityOfCheapestProductBy(arg0);
+    }
+
+    @When("The user removes the most expensive product from the cart")
+    public void theUserRemovesTheMostExpensiveProductFromTheCart() {
+        cartPage.decreaseMostExpensiveProduct();
+    }
+
+    @And("A message indicating an item was removed is displayed")
+    public void aMessageIndicatingAnItemWasRemovedIsDisplayed() {
+        Assert.assertTrue(cartPage.getInformationMessage().contains("The item was successfully removed."));
     }
 }

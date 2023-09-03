@@ -30,13 +30,11 @@ Feature: Checkout amounts and options
     Then An information message appears indicating the code "this-is-a-test" is not valid
     And The Total amount doesn't include any discount
 
-#  # flaky, let's wait to consider it
-#  Scenario: Free shipping costs are revoked when the subtotal doesn't met the minimum value
-#    Given The user is in the cart page
-#    And The cart is not empty
-#    And The country to deliver to is Estonia
-#    And The subtotal is more than €69
-#    When The user removes the cheapest products until the subtotal is less than €69
-#    Then The shipping fee changes
-#    And The total amount changes accordingly
-#    And The information message about Free shipping costs appears
+  Scenario: Free shipping costs are revoked when the subtotal doesn't met the minimum value
+    Given The country to deliver to is "Estonia"
+    When The user adds products from the recommendations until the subtotal is higher than €69
+    Then The shipping costs are free
+    When The user removes the cheapest products until the subtotal is less than €69
+    Then The shipping fee is not free
+    And The total amount changes accordingly
+    And The information message about Free shipping costs appears
