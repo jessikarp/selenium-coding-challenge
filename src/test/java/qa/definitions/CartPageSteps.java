@@ -1,6 +1,5 @@
 package qa.definitions;
 
-import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -68,7 +67,7 @@ public class CartPageSteps {
         Assert.assertTrue(Float.parseFloat(cartPage.getSubtotalAmount())<arg0);
     }
 
-    @And("The Proceed to checkout button is disabled")
+    @Given("The Proceed to checkout button is disabled")
     public void theProceedToCheckoutButtonIsDisabled() {
         Assert.assertFalse(cartPage.verifyProceedToCheckoutButtonEnabled());
     }
@@ -76,6 +75,8 @@ public class CartPageSteps {
     @When("The user adds products from the recommendations until the subtotal is higher than €{float}")
     public void theUserAddsProductsFromTheRecommendationsUntilTheSubtotalIsHigherThan(float arg0) {
         cartPage.addRecommendedProductsUntilSubtotalAmountIsMet(arg0);
+        cartPage.getSubtotalAmount();
+        cartPage.getTotalAmount();
     }
 
     @Then("The Proceed to checkout button is enabled")
@@ -106,22 +107,22 @@ public class CartPageSteps {
     }
 
     @Then("The Shipping fee changes")
-    public void theShippingFeeChanges() {
+    public void theShippingFeeChanges() throws InterruptedException {
         Assert.assertTrue(cartPage.shipmentFeeIsChanged());
     }
 
-    @And("The total amount changes accordingly")
-    public void theTotalAmountChangesAccordingly() {
+    @Then("The total amount changes accordingly")
+    public void theTotalAmountChangesAccordingly() throws InterruptedException {
         Assert.assertTrue(cartPage.totalHasChanged());
         Assert.assertTrue(cartPage.newTotalMatchesWithNewShipmentFee());
     }
 
     @Then("The shipping costs are free")
-    public void theShippingCostsAreFree() {
+    public void theShippingCostsAreFree() throws InterruptedException {
         Assert.assertTrue(cartPage.verifyShippingFeeIsFree());
     }
 
-    @And("The total amount is the same as the subtotal amount")
+    @Then("The total amount is the same as the subtotal amount")
     public void theTotalAmountIsTheSameAsTheSubtotalAmount() {
         Assert.assertEquals(cartPage.getTotalAmount(), cartPage.getSubtotalAmount());
     }
@@ -136,8 +137,8 @@ public class CartPageSteps {
         Assert.assertTrue(cartPage.getInformationMessage().contains(arg0));
     }
 
-    @And("The Total amount doesn't include any discount")
-    public void theTotalAmountDoesntIncludeAnyDiscount() {
+    @Then("The Total amount doesn't include any discount")
+    public void theTotalAmountDoesntIncludeAnyDiscount() throws InterruptedException {
         Assert.assertFalse(cartPage.totalHasChanged());
     }
 
@@ -147,11 +148,11 @@ public class CartPageSteps {
     }
 
     @Then("The shipping fee is not free")
-    public void theShippingFeeIsNotFree() {
+    public void theShippingFeeIsNotFree() throws InterruptedException {
         Assert.assertFalse(cartPage.verifyShippingFeeIsFree());
     }
 
-    @And("The information message about Free shipping costs appears")
+    @Then("The information message about Free shipping costs appears")
     public void theInformationMessageAboutFreeShippingCostsAppears() {
         Assert.assertTrue(cartPage.getInformationMessage().contains(cartPage.missingAmountForFreeShipping()));
     }
@@ -176,8 +177,19 @@ public class CartPageSteps {
         cartPage.decreaseMostExpensiveProduct();
     }
 
-    @And("A message indicating an item was removed is displayed")
+    @Then("A message indicating an item was removed is displayed")
     public void aMessageIndicatingAnItemWasRemovedIsDisplayed() {
         Assert.assertTrue(cartPage.getInformationMessage().contains("The item was successfully removed."));
+    }
+
+    @Then("The most expensive item was removed successfully")
+    public void theMostExpensiveItemWasRemovedSuccessfully() throws InterruptedException {
+        Assert.assertTrue(cartPage.verifyRemovedItemWasTheMostExpensive());
+        Assert.assertTrue(cartPage.subtotalIsCorrect());
+    }
+
+    @Then("The subtotal changes accordingly with the product increasing by {int}")
+    public void theSubtotalChangesAccordinglyWithTheProductIncreasingBy(int arg0) throws InterruptedException {
+        Assert.assertTrue(cartPage.subtotalChangesWhenAddingMoreOfTheCheaperProduct(arg0));
     }
 }

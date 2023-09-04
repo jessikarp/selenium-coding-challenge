@@ -1,4 +1,4 @@
-# Zooplus Selenium Coding Challenge
+# Selenium Coding Challenge
 
 This assignment is implemented to enhance the quality assurance process by automating test cases for a shopping cart application. Leveraging the powerful combination of Java, Selenium, TestNG and Cucumber, this project aims to streamline the testing process and ensure the reliability of the shopping cart functionality.
 

@@ -6,9 +6,7 @@ import org.openqa.selenium.support.FindBy;
 public class CartPageLocators {
     /**
      * Class dedicated to the storage and localization of the
-     * elements in the DOM. Regardless of the best practices,
-     * most of them are using the xpath of the element to
-     * locate them
+     * elements in the DOM.
      */
 
     @FindBy(xpath = "//*[@data-zta=\"continueShoppingBtn\"]")

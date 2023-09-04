@@ -12,6 +12,10 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class HelperClass {
+    /**
+     * Class dedicated to everything related to session management
+     */
+
     private static WebDriver driver;
     public final static int TIMEOUT = 10;
 
